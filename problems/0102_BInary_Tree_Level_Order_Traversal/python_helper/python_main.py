@@ -59,10 +59,18 @@ def create_tree(node_values: List[int]) -> TreeNode:
     while len(stack) > 0:
         curr_node, idx = stack.pop()
 
-        sd = int(log2(idx + 1))
-        i = idx - (2**sd - 1)
-        l_idx = 2**(sd+1) + 2*i - 1
-        r_idx = 2**(sd+1) + 2*i
+
+        # Notice that this...
+        # sd = int(log2(idx + 1))
+        # i = idx - (2**sd - 1)
+        # l_idx = 2**(sd+1) + 2*i - 1
+        # r_idx = 2**(sd+1) + 2*i
+
+        # means that l_idx = 2**(sd+1) + 2*(idx - 2**sd + 1) - 1 = 2**(sd+1) - 2*2**sd + 2*idx + 2 - 1
+        # = 2**(sd+1) - 2**(sd+1) + 2*idx + 1 = 2*idx + 1
+        l_idx = 2*idx + 1
+        # therefore, r_idx is just l_idx + 1...
+        r_idx = 2*idx + 2
 
         if l_idx < len(node_values) and node_values[l_idx] is not None:
             l_node = TreeNode(node_values[l_idx])
