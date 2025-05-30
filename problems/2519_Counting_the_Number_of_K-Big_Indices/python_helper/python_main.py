@@ -7,7 +7,7 @@ class FenwickTree:
     on a fixed sized array where we frequently:
     * query the prefix operation
     * update the elements in the array
-    The query and update operations are done in O(logn) time, but it takes O(nlogn) to build the tree.
+    The query and update operations are done in O(logn) time
     """
     def __init__(self, n):
         self.size = n

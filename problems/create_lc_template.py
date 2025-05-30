@@ -12,6 +12,10 @@ python create_lc_template.py <name_of_new_directory>
 Once invoked, this script will scape the problem description, create a new notebook in the specified directory,
 and paste this problem description into the notebook as the first Markdown cell. It will also paste boilerplate code
 into the notebook as a code cell.
+
+TODO:
+    Extend this program to scrape the default code given in the problem and inject this into the boilerplate code.
+    Additionally, it would be nice to scrape the default test-cases and inject this into the boilerplate code.
 """
 import os, nbformat, argparse
 from selenium import webdriver
@@ -123,7 +127,7 @@ def main():
     chrome_options = Options()
     chrome_options.debugger_address = localhost
 
-    # Make sure you have the chromedriver matching your browser version
+    # Ensure the chromedriver matches the browser version
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
