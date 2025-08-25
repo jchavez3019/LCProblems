@@ -1,8 +1,12 @@
 from typing import *
 from sys import getsizeof
+from abc import ABC, abstractmethod
 
-class AnySegmentTree:
-    def __init__(self, global_interval: Tuple[int, int], initial_values: Optional[List[int]] = None,
+class SegmentTree(ABC):
+    """
+    Abstract base class for segment-tree implementations.
+    """
+    def __init__(self, global_interval: Tuple[int, int], initial_values: Optional[List[Union[int, float, bool]]] = None,
                  verbose_init: bool = False):
         """
         Initializes a segment tree. Over some interval range, integer points lying on the range can be assigned
@@ -65,9 +69,9 @@ class AnySegmentTree:
                 curr_idx -= num_nodes
                 for i in range(curr_idx, curr_idx + num_nodes):
                     # for every node in this split depth, update if either child node is True
-                    self.tree[i] = self.tree[i<<1] or self.tree[(i<<1) + 1]
+                    self.tree[i] = self._check(self.tree[i<<1], self.tree[(i<<1) + 1])
 
-    def update(self, x: int, val: bool):
+    def update(self, x: int, val: Union[int, float, bool]):
         """
         Given an integer point on the segment tree's range, update its truth value and the internal state of the tree.
         :param x:       Integer point in the tree's range.
@@ -85,11 +89,11 @@ class AnySegmentTree:
         x_idx >>= 1
         while x_idx > 0:
             # update this node by its children
-            self.tree[x_idx] = self.tree[x_idx << 1] or self.tree[(x_idx << 1) + 1]
+            self.tree[x_idx] = self._check(self.tree[x_idx << 1], self.tree[(x_idx << 1) + 1])
             # move to the next parent node
             x_idx >>= 1
 
-    def check(self, l: int, r: int) -> bool:
+    def query(self, l: int, r: int) -> Union[int, float, bool]:
         """
         Given a range [l, r] ⊆ [start, end], check if the given range contains a point that has been stored
         in the segment tree. Note that [start, end] is the range that the segment tree supports.
@@ -100,9 +104,9 @@ class AnySegmentTree:
         assert self.start <= l <= r <= self.end, (f"Please fix interval endpoints. Given range [{l}, {r}] but the tree "
                                                   f"only supports inclusive ranges in [{self.start}, {self.end}]")
         idx = 1 # first index into the segment tree
-        return self._recurse_check(idx, l, r, self.start, self.end)
+        return self._recurse_query(idx, l, r, self.start, self.end)
 
-    def _recurse_check(self, idx: int, l: int, r: int, gl: int, gr: int):
+    def _recurse_query(self, idx: int, l: int, r: int, gl: int, gr: int) -> Union[int, float, bool]:
         """
         Recursive helper method which breaks the problem of verifying/falsifying the existence of a point in a
         given range into smaller subproblems.
@@ -126,19 +130,79 @@ class AnySegmentTree:
 
         if l <= g_midpoint and g_midpoint + 1 <= r:
             # Split the given range into two smaller ranges. Check on each range if it intersects a point.
-            a = self._recurse_check(l_idx, l, g_midpoint, gl, g_midpoint)
-            b = self._recurse_check(r_idx, g_midpoint + 1, r, g_midpoint + 1, gr)
-            return a or b
+            a = self._recurse_query(l_idx, l, g_midpoint, gl, g_midpoint)
+            b = self._recurse_query(r_idx, g_midpoint + 1, r, g_midpoint + 1, gr)
+            return self._check(a, b)
         elif r <= g_midpoint:
             # The given range inclusively belongs to the left subchild. Recurse left.
-            return self._recurse_check(l_idx, l, r, gl, g_midpoint)
+            return self._recurse_query(l_idx, l, r, gl, g_midpoint)
         elif g_midpoint + 1 <= l:
             # The given range inclusively belongs to the right subchild. Recurse right.
-            return self._recurse_check(r_idx, l, r, g_midpoint + 1, gr)
+            return self._recurse_query(r_idx, l, r, g_midpoint + 1, gr)
         else:
             # Erroneous error with the given range and the subchild's range.
             raise AssertionError(f"Expected [l, r] ⊆ [gl, gr] but instead, given [l, r]: [{l}, {r}] and "
                                  f"[gl, gr]: [{gl}, {gr}].")
+
+    @staticmethod
+    @abstractmethod
+    def _check(a: Union[int, float, bool], b: Union[int, float, bool]) -> Union[int, float, bool]:
+        """
+        Defines how the values between two nodes should be compared, e.g. 'or', 'max', and 'min'.
+        :param a:   Value from node 'a'.
+        :param b:   Value from node 'b'.
+        :return:    Result from comparison check.
+        """
+        pass
+
+    def __len__(self) -> int:
+        """
+        Returns the number of nodes in the segment tree. Note that this is one less than the length of the array
+        allocated for the segment tree as the 0'th index is never used. This is common as 1-indexing is more
+        intuitive and simpler for binary trees.
+        """
+        return self.size - 1
+
+    def __sizeof__(self):
+        """
+        Return the memory footprint of the segment tree.
+        """
+        return getsizeof(self.tree)
+
+    def __eq__(self, other):
+        """
+        Returns whether two segment trees are equal in values and range.
+        :param other:   The other segment tree in the comparison.
+        :return:        Comparison truth value.
+        """
+        return self.tree == other.tree and self.start == other.start and self.end == other.end
+
+class MaxSegmentTree(SegmentTree):
+    """
+    Implementation of the "max" logic segment tree. These trees are capable of answering "max" types of queries
+    on 1D ranges.
+    """
+    @staticmethod
+    def _check(a, b):
+        return max(a, b)
+
+class MinSegmentTree(SegmentTree):
+    """
+    Implementation of the "min" logic segment tree. These trees are capable of answering "min" types of queries
+    on 1D ranges.
+    """
+    @staticmethod
+    def _check(a, b):
+        return min(a, b)
+
+class AnySegmentTree(SegmentTree):
+    """
+    Implementation of the "OR" logic segment tree. These trees are capable of answering "OR" types of queries
+    on 1D ranges.
+    """
+    @staticmethod
+    def _check(node_a: bool, node_b: bool) -> bool:
+        return node_a or node_b
 
     def __repr__(self) -> str:
         """
@@ -165,27 +229,6 @@ class AnySegmentTree:
 
         return "\n".join(repr_strs)
 
-    def __len__(self) -> int:
-        """
-        Returns the number of nodes in the segment tree. Note that this is one less than the length of the array
-        allocated for the segment tree as the 0'th index is never used. This is common as 1-indexing is more
-        intuitive and simpler for binary trees.
-        """
-        return self.size - 1
-
-    def __sizeof__(self):
-        """
-        Return the memory footprint of the segment tree.
-        """
-        return getsizeof(self.tree)
-
-    def __eq__(self, other):
-        """
-        Returns whether two segment trees are equal in values and range.
-        :param other:   The other segment tree in the comparison.
-        :return:        Comparison truth value.
-        """
-        return self.tree == other.tree and self.start == other.start and self.end == other.end
 
 def example(global_interval: Tuple[int, int], initial_values: List[int]):
     segment_tree = AnySegmentTree(global_interval, initial_values)
@@ -199,7 +242,7 @@ def example(global_interval: Tuple[int, int], initial_values: List[int]):
     print(segment_tree)
 
     check_range = (1, 3)
-    check_result = segment_tree.check(*check_range)
+    check_result = segment_tree.query(*check_range)
     print(f"\nDoes range {check_range} contain a point? {check_result}")
 
 
