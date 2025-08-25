@@ -1,4 +1,5 @@
 from typing import *
+from sys import getsizeof
 
 class AnySegmentTree:
     def __init__(self, global_interval: Tuple[int, int], initial_values: Optional[List[int]] = None,
@@ -18,34 +19,34 @@ class AnySegmentTree:
         o_num_points = end - start + 1
 
         # calculate how many bits it takes to reproduce the last index in our array
-        self.num_bits = (o_num_points - 1).bit_length()
+        self.num_bits: int = (o_num_points - 1).bit_length()
         # we need 2^{num_bits + 1} or 4^{num_bits} to produce a segment tree over this range
-        self.size = 2 << self.num_bits
+        self.size: int = 2 << self.num_bits
         # initialize the tree
-        self.tree = [False] * self.size
+        self.tree: List[bool] = [False] * self.size
 
         # If the global interval given does not yield a number of integer points that is a power of 2,
         # we will manually extend the range.
         # NOTE: The initial values are still expected to have length equal to the number of integer points in the
         # originally given global interval.
-        self.num_points = 1 << self.num_bits
-        self.start = start
-        self.end = self.start + self.num_points - 1
+        self.num_points: int = 1 << self.num_bits
+        self.start: int = start
+        self.end: int = self.start + self.num_points - 1
         if verbose_init:
             print(f"Given [start, end]: [{start}, {end}].\n"
                   f"Updating range to [{self.start}, {self.end}].\n"
                   f"Now supporting {self.num_points} points from {o_num_points}.")
 
         # other notable attributes
-        self.max_sd = self.num_bits # maximum split depth
+        self.max_sd: int = self.num_bits # maximum split depth
+        self.leaf_node_start_idx: int = 1 << self.num_bits # the idx of the first leaf node in the tree
 
         if initial_values:
             # use the initial values to update the tree
             assert o_num_points <= len(initial_values) <= self.num_points, ("The given initial values must initialize "
                                                                             "every integer point in the global "
                                                                             "interval.")
-            # get the idx of the first leaf node in the tree
-            self.leaf_node_start_idx = 1 << self.num_bits
+
             # get the index of the last leaf node in the tree that will be initialized
             stop_idx = self.leaf_node_start_idx + len(initial_values)
             # initialize the values in the tree given these initial values
@@ -163,6 +164,28 @@ class AnySegmentTree:
             curr_idx += num_nodes
 
         return "\n".join(repr_strs)
+
+    def __len__(self) -> int:
+        """
+        Returns the number of nodes in the segment tree. Note that this is one less than the length of the array
+        allocated for the segment tree as the 0'th index is never used. This is common as 1-indexing is more
+        intuitive and simpler for binary trees.
+        """
+        return self.size - 1
+
+    def __sizeof__(self):
+        """
+        Return the memory footprint of the segment tree.
+        """
+        return getsizeof(self.tree)
+
+    def __eq__(self, other):
+        """
+        Returns whether two segment trees are equal in values and range.
+        :param other:   The other segment tree in the comparison.
+        :return:        Comparison truth value.
+        """
+        return self.tree == other.tree and self.start == other.start and self.end == other.end
 
 def example(global_interval: Tuple[int, int], initial_values: List[int]):
     segment_tree = AnySegmentTree(global_interval, initial_values)
