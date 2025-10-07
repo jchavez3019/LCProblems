@@ -146,12 +146,12 @@ class SegmentTree(ABC):
 
     @staticmethod
     @abstractmethod
-    def _check(a: Union[int, float, bool], b: Union[int, float, bool]) -> Union[int, float, bool]:
+    def _check(node_a: Union[int, float, bool], node_b: Union[int, float, bool]) -> Union[int, float, bool]:
         """
         Defines how the values between two nodes should be compared, e.g. 'or', 'max', and 'min'.
-        :param a:   Value from node 'a'.
-        :param b:   Value from node 'b'.
-        :return:    Result from comparison check.
+        :param node_a:   Value from node 'a'.
+        :param node_b:   Value from node 'b'.
+        :return:         Result from comparison check.
         """
         pass
 
@@ -183,8 +183,8 @@ class MaxSegmentTree(SegmentTree):
     on 1D ranges.
     """
     @staticmethod
-    def _check(a, b):
-        return max(a, b)
+    def _check(node_a: Union[int, float], node_b: Union[int, float]) -> Union[int, float]:
+        return max(node_a, node_b)
 
 class MinSegmentTree(SegmentTree):
     """
@@ -192,8 +192,8 @@ class MinSegmentTree(SegmentTree):
     on 1D ranges.
     """
     @staticmethod
-    def _check(a, b):
-        return min(a, b)
+    def _check(node_a: Union[int, float], node_b: Union[int, float]) -> Union[int, float]:
+        return min(node_a, node_b)
 
 class AnySegmentTree(SegmentTree):
     """
